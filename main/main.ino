@@ -47,7 +47,7 @@ float rpy[3];
 int i = 0;
 
 // Pins associated with Each channel of Reciever
-int ReceiverPins[] = {11, 12, 13, 14, 15};
+int ReceiverPins[] = {13, 14, 16, 17};
 
 // PID values of each channel R P Y
 float P[3] = {1,1,1};
@@ -64,6 +64,7 @@ float Prev_e[3] = {0, 0, 0};
 float integral[3] = {0, 0, 0};
 float g[3];
 float Motor_Speed[4] = {0, 0, 0, 0};
+int Motor_Pins[4] = {26, 27, 32, 33}
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -225,7 +226,7 @@ void loop() {
     // convert PID ctl cmd to motor ctl cmd
     for(int i=0; i<3; i++){
         Motor_Speed[] = map(constrain(({-1, 1, -1, 1} * g(1) + {1, 1, -1, -1} * g(2) + {1, -1, -1, 1} * g(3)), -255, 255), -255, 255);
-        analogWrite(motor[i],Motor_Speed[i]);
+        analogWrite(Motor_Pins[i],Motor_Speed[i]);
     }
 }
 
