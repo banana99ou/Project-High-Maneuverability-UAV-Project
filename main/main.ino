@@ -78,16 +78,17 @@ void dmpDataReady() {
 // ================================================================
 // ===                      INITIAL SETUP                       ===
 // ================================================================
-#include <Servo.h>
-
-Servo myservo1;  // create servo object to control a servo
-Servo myservo2;
-Servo myservo3;
+#include <ESP32Servo.h>
+Servo MotorFL;  // create servo object to control a ESC
+Servo MotorFR;
+Servo MotorBL;
+Servo MotorBR;
 
 void setup() {
-    myservo1.attach(2);
-    myservo2.attach(3);
-    myservo3.attach(4);
+    MotorFL.attach(Motor_Pins[0]);  // create servo object to control a ESC
+    MotorFR.attach(Motor_Pins[1]);
+    MotorBL.attach(Motor_Pins[2]);
+    MotorBR.attach(Motor_Pins[3]);
     
     // join I2C bus (I2Cdev library doesn't do this automatically)
     #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
