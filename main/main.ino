@@ -226,9 +226,13 @@ void loop() {
 
     // convert PID ctl cmd to motor ctl cmd
     for(int i=0; i<3; i++){
-        Motor_Speed[] = map(constrain(({-1, 1, -1, 1} * g(1) + {1, 1, -1, -1} * g(2) + {1, -1, -1, 1} * g(3)), -255, 255), -255, 255);
-        analogWrite(Motor_Pins[i],Motor_Speed[i]);
+        Motor_Speed[i] = map(constrain(({-1, 1, -1, 1} * g(1) + {1, 1, -1, -1} * g(2) + {1, -1, -1, 1} * g(3)), -255, 255), -255, 255, 0, 180);
     }
+
+    MotorFL.write(Motor_Speed[0]);
+    MotorFR.write(Motor_Speed[1]);
+    MotorBL.write(Motor_Speed[2]);
+    MotorBR.write(Motor_Speed[3]);
 }
 
 // void ReadReceiver(int ReceiverPin[], float& ROLL, float& PITCH, float& YAW) {
