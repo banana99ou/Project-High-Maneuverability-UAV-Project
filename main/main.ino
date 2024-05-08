@@ -64,7 +64,7 @@ float Prev_e[3] = {0, 0, 0};
 float integral[3] = {0, 0, 0};
 float g[3];
 float Motor_Speed[4] = {0, 0, 0, 0};
-int Motor_Pins[4] = {26, 27, 32, 33}
+int Motor_Pins[4] = {26, 27, 32, 33};
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -193,12 +193,12 @@ void loop() {
             mpu.dmpGetQuaternion(&q, fifoBuffer);
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-            Serial.print("ypr\t");
-            Serial.print(ypr[0] * 180/M_PI);
-            Serial.print("\t");
-            Serial.print(ypr[1] * 180/M_PI);
-            Serial.print("\t");
-            Serial.println(ypr[2] * 180/M_PI);
+            // Serial.print("ypr\t");
+            // Serial.print(ypr[0] * 180/M_PI);
+            // Serial.print("\t");
+            // Serial.print(ypr[1] * 180/M_PI);
+            // Serial.print("\t");
+            // Serial.println(ypr[2] * 180/M_PI);
         #endif
 
         // blink LED to indicate activity
@@ -206,28 +206,50 @@ void loop() {
         digitalWrite(LED_PIN, blinkState);
     }
 
+    // Serial.print("Roll Pitch Yaw");
     for(int i=0; i<3; i++){
-        rpy[i] = ypr[2-i];
+        rpy[i] = ypr[2-i] * 180/M_PI;
+        // Serial.print(", ");
+        // Serial.print(rpy[i]);
     }
+    // Serial.println("");
     
     // get setpoint from receiver
     // ReadReceiver(ReceiverPins, RPY_Setpoint[0], RPY_Setpoint[1], RPY_Setpoint[2]);
 
-    // calculate Error
+    // Serial.print("calculate Error");
     for(int i=0; i<3; i++){
         e[i] = RPY_Setpoint[i] - rpy[i];
+        // Serial.print(", ");
+        // Serial.print(e[i]);
     }
+    // Serial.println("");
 
-    // calculate PID ctl cmd
+    Serial.print("calculate PID ctl cmd ");
     for(int i=0; i<3; i++){
         integral[i] += e[i] * dt;
         g[i] = P[i]*e[i] + I[i]*(integral[i]) + D[i]*(e[i]-Prev_e[i])/dt;
+        Serial.print(", g: ");
+        Serial.print(g[i]);
     }
+    // Serial.println("");
 
     // convert PID ctl cmd to motor ctl cmd
-    for(int i=0; i<3; i++){
-        Motor_Speed[i] = map(constrain(({-1, 1, -1, 1} * g(1) + {1, 1, -1, -1} * g(2) + {1, -1, -1, 1} * g(3)), -255, 255), -255, 255, 0, 180);
+    //! check max and min value of Motor_Speed by experiments
+    Motor_Speed[0] = (-g[0] + g[1] + g[2]);
+    Motor_Speed[1] = (g[0] + g[1] - g[2]);
+    Motor_Speed[2] = (-g[0] - g[1] - g[2]);
+    Motor_Speed[3] = (g[0] - g[1] + g[2]);
+
+    Serial.print(", Motor before mapping: ");
+    Serial.print(Motor_Speed[0]);
+
+    for(int i=0; i<4; i++){
+        Motor_Speed[i] = map(constrain(Motor_Speed[i], -180, 180), -180, 180, 0, 180);
     }
+
+    Serial.print(", Motor after mapping: ");
+    Serial.println(Motor_Speed[0]);
 
     MotorFL.write(Motor_Speed[0]);
     MotorFR.write(Motor_Speed[1]);
