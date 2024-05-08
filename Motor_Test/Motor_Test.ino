@@ -57,3 +57,27 @@ void serialEvent()
         }
     }
 }
+
+void MotorPID(float setpoint){
+    // calculate Error
+    for(int i=0; i<3; i++){
+        e[i] = RPY_Setpoint[i] - rpy[i];
+    }
+
+    // calculate PID ctl cmd
+    for(int i=0; i<3; i++){
+        integral[i] += e[i] * dt;
+        g[i] = P[i]*e[i] + I[i]*(integral[i]) + D[i]*(e[i]-Prev_e[i])/dt;
+    }
+
+    // convert PID ctl cmd to motor ctl cmd
+    for(int i=0; i<3; i++){
+        Motor_Speed[i] = map(constrain(({-1, 1, -1, 1} * g(1) + {1, 1, -1, -1} * g(2) + {1, -1, -1, 1} * g(3)), -255, 255), -255, 255, 0, 180);
+    }
+
+    MotorFL.write(Motor_Speed[0]);
+    MotorFR.write(Motor_Speed[1]);
+    MotorBL.write(Motor_Speed[2]);
+    MotorBR.write(Motor_Speed[3]);
+}
+}
