@@ -47,7 +47,7 @@ float rpy[3];
 int i = 0;
 
 // Pins associated with Each channel of Reciever
-int ReceiverPins[] = {13, 14, 16, 17};
+int ReceiverPins[] = {25, 26, 27, 32, 33, 34};
 
 // PID values of each channel R P Y
 float P[3] = {1,1,1};
@@ -64,7 +64,7 @@ float Prev_e[3] = {0, 0, 0};
 float integral[3] = {0, 0, 0};
 float g[3];
 float Motor_Speed[4] = {0, 0, 0, 0};
-int Motor_Pins[4] = {26, 27, 32, 33};
+int Motor_Pins[4] = {16, 17, 18, 19};
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
