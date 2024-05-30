@@ -1,3 +1,7 @@
+/* =========================================================================
+   Take number from Seiral with serialEvent() and set it as throtle point
+ * ========================================================================= */
+
 #include <ESP32Servo.h>
 
 int i = 0;
@@ -79,5 +83,4 @@ void MotorPID(float setpoint){
     MotorFR.write(Motor_Speed[1]);
     MotorBL.write(Motor_Speed[2]);
     MotorBR.write(Motor_Speed[3]);
-}
 }
