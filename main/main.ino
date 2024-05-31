@@ -89,6 +89,18 @@ void setup() {
     MotorFR.attach(Motor_Pins[1]);
     MotorBL.attach(Motor_Pins[2]);
     MotorBR.attach(Motor_Pins[3]);
+
+    MotorFL.write(100);
+    MotorFR.write(100);
+    MotorBL.write(100);
+    MotorBR.write(100);
+    delay(1000);
+    MotorFL.write(0);
+    MotorFR.write(0);
+    MotorBL.write(0);
+    MotorBR.write(0);
+    delay(1000);
+    
     
     // join I2C bus (I2Cdev library doesn't do this automatically)
     #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
