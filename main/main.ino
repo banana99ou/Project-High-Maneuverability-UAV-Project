@@ -85,10 +85,10 @@ Servo MotorBL;
 Servo MotorBR;
 
 void setup() {
-    MotorFL.attach(Motor_Pins[0]);  // create servo object to control a ESC
-    MotorFR.attach(Motor_Pins[1]);
-    MotorBL.attach(Motor_Pins[2]);
-    MotorBR.attach(Motor_Pins[3]);
+    MotorFL.attach(Motor_Pins[0], 1000, 2000);  // create servo object to control a ESC
+    MotorFR.attach(Motor_Pins[1], 1000, 2000);
+    MotorBL.attach(Motor_Pins[2], 1000, 2000);
+    MotorBR.attach(Motor_Pins[3], 1000, 2000);
 
     MotorFL.write(100);
     MotorFR.write(100);
@@ -224,6 +224,12 @@ void loop() {
         // Serial.print(", ");
         // Serial.print(rpy[i]);
     }
+
+    //switch roll and pitch due to wrong sensor orientation
+    float temp = rpy[0];
+    rpy[0] = rpy[1];
+    rpy[1] = temp;
+
     // Serial.println("");
     
     // get setpoint from receiver
