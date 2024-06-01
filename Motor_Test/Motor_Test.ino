@@ -18,10 +18,10 @@ Servo MotorBR;
 void setup()
 {
     Serial.begin(115200);
-    MotorFL.attach(Motor_Pins[0]);  // create servo object to control a ESC
-    MotorFR.attach(Motor_Pins[1]);
-    MotorBL.attach(Motor_Pins[2]);
-    MotorBR.attach(Motor_Pins[3]);
+    MotorFL.attach(Motor_Pins[0], 1000, 2000);  // create servo object to control a ESC
+    MotorFR.attach(Motor_Pins[1], 1000, 2000);
+    MotorBL.attach(Motor_Pins[2], 1000, 2000);
+    MotorBR.attach(Motor_Pins[3], 1000, 2000);
 }
 
 void loop()
