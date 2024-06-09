@@ -225,11 +225,6 @@ void loop() {
         // Serial.print(rpy[i]);
     }
 
-    //switch roll and pitch due to wrong sensor orientation
-    float temp = rpy[0];
-    rpy[0] = rpy[1];
-    rpy[1] = temp;
-
     // Serial.println("");
     
     // get setpoint from receiver
@@ -250,6 +245,7 @@ void loop() {
         Serial.print(", g: ");
         Serial.print(g[i]);
     }
+
     // Serial.println("");
 
     // convert PID ctl cmd to motor ctl cmd
@@ -263,7 +259,7 @@ void loop() {
     Serial.print(Motor_Speed[0]);
 
     for(int i=0; i<4; i++){
-        Motor_Speed[i] = map(constrain(Motor_Speed[i], -180, 180), -180, 180, 0, 180);
+        Motor_Speed[i] = constrain(Motor_Speed[i], 0, 100);
     }
 
     Serial.print(", Motor after mapping: ");
