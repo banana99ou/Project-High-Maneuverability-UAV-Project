@@ -78,7 +78,7 @@ void dmpDataReady() {
 // ================================================================
 // ===                      INITIAL SETUP                       ===
 // ================================================================
-#include <ESP32Servo.h>
+#include <Servo.h>
 Servo MotorFL;  // create servo object to control a ESC
 Servo MotorFR;
 Servo MotorBL;
