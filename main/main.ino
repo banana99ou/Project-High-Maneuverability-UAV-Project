@@ -64,7 +64,7 @@ float Prev_e[3] = {0, 0, 0};
 float integral[3] = {0, 0, 0};
 float g[3];
 float Motor_Speed[4] = {0, 0, 0, 0};
-int Motor_Pins[4] = {16, 17, 18, 19};
+int Motor_Pins[4] = {6, 9, 10, 11};
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -90,6 +90,7 @@ void setup() {
     MotorBL.attach(Motor_Pins[2], 1000, 2000);
     MotorBR.attach(Motor_Pins[3], 1000, 2000);
 
+    // calibrate esc
     MotorFL.write(100);
     MotorFR.write(100);
     MotorBL.write(100);
@@ -251,8 +252,8 @@ void loop() {
     // convert PID ctl cmd to motor ctl cmd
     //! check max and min value of Motor_Speed by experiments
     Motor_Speed[0] = (-g[0] + g[1] + g[2]);
-    Motor_Speed[1] = (g[0] + g[1] - g[2]);
-    Motor_Speed[2] = (-g[0] - g[1] - g[2]);
+    Motor_Speed[1] = (-g[0] - g[1] - g[2]);
+    Motor_Speed[2] = (g[0] + g[1] - g[2]);
     Motor_Speed[3] = (g[0] - g[1] + g[2]);
 
     Serial.print(", Motor before mapping: ");
