@@ -47,7 +47,7 @@ float rpy[3];
 int i = 0;
 
 // Pins associated with Each channel of Reciever
-int ReceiverPins[] = {25, 26, 27, 32, 33, 34};
+int ReceiverPins[] = {2, 8, 4, 5};
 
 // PID values of each channel R P Y
 float P[3] = {1,1,1};
