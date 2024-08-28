@@ -1,8 +1,5 @@
 int ReceiverPins[] = {2, 8, 4, 5};
 
-int avg = 0;
-int i = 1;
-int sum = 0;
 
 void setup(){
     Serial.begin(115200);
@@ -11,6 +8,7 @@ void setup(){
     // }
     digitalWrite(12, HIGH);
 }
+
 
 void loop(){
     int Roll_raw     = pulseIn(ReceiverPins[0], HIGH, 25000);
