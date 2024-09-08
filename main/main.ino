@@ -90,6 +90,7 @@ void setup() {
     MotorBL.attach(Motor_Pins[2], 1000, 2000);
     MotorBR.attach(Motor_Pins[3], 1000, 2000);
 
+    // calibrate esc
     MotorFL.write(100);
     MotorFR.write(100);
     MotorBL.write(100);
@@ -191,6 +192,31 @@ void setup() {
 // ================================================================
 
 void loop() {
+    // read Recv pins
+    int Roll_raw     = pulseIn(ReceiverPins[0], HIGH, 25000);
+    int Pitch_raw    = pulseIn(ReceiverPins[1], HIGH, 25000);
+    int Yaw_raw      = pulseIn(ReceiverPins[2], HIGH, 25000);
+    int Throttle_raw = pulseIn(ReceiverPins[3], HIGH, 25000);
+
+    int Roll        = map(constrain(Roll_raw,     1051, 1885), 1051, 1885, -254,  254);
+    int Pitch       = map(constrain(Pitch_raw,    1051, 1885), 1051, 1885,  254, -254);
+    int Yaw         = map(constrain(Yaw_raw,      1051, 1885), 1051, 1885, -254,  254);
+    int Throttle    = map(constrain(Throttle_raw, 1051, 1885), 1051, 1885, -254,  254);
+
+    // set deadzone
+    if (abs(Roll) < 24){
+        Roll = 0;
+    }
+    // if (abs(Pitch) < 24){
+    //     Pitch = 0;
+    // }
+    if (abs(Yaw) < 24){
+        Yaw = 0;
+    }
+    if (abs(Throttle) < 24){
+        Throttle = 0;
+    }
+    
     // calculate dt
     t_n = micros();
     dt = t_n - t_b;
