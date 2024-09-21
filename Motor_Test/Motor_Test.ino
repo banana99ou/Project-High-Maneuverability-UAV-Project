@@ -5,7 +5,7 @@
 #include <ESP32Servo.h>
 
 int i = 0;
-int Motor_Pins[4] = {16, 17, 18, 19};
+int Motor_Pins[4] = {18, 19, 12, 13};
 
 bool stringComplete;
 String inputString;
@@ -18,39 +18,74 @@ Servo MotorBR;
 void setup()
 {
     Serial.begin(115200);
-    MotorFL.attach(Motor_Pins[0], 1000, 2000);  // create servo object to control a ESC
+    // create servo object to control a ESC
+    MotorFL.attach(Motor_Pins[0], 1000, 2000);  
     MotorFR.attach(Motor_Pins[1], 1000, 2000);
     MotorBL.attach(Motor_Pins[2], 1000, 2000);
     MotorBR.attach(Motor_Pins[3], 1000, 2000);
+    // calibrate esc
+    MotorFL.write(100);
+    MotorFR.write(100);
+    MotorBL.write(100);
+    MotorBR.write(100);
+    delay(1000);
+    MotorFL.write(0);
+    MotorFR.write(0);
+    MotorBL.write(0);
+    MotorBR.write(0);
+    delay(1000);
 }
 
 void loop()
 {
-    serialEvent();
-    if (stringComplete)
-    {
-        Serial.print("input: ");
-        Serial.println(inputString);
-        if (inputString.startsWith("Step"))
-        {
-            Serial.println("Ack: Step");
-            delay(100);
-            int spaceIndex = inputString.indexOf(' ');
-            if (spaceIndex != -1)
-            {
-                String value = inputString.substring(spaceIndex + 1);
-                int amount = value.toInt();
-                Serial.println(amount);
-                MotorFL.write(amount);
-                MotorFR.write(amount);
-                MotorBL.write(amount);
-                MotorBR.write(amount);
-            }
-        }
+    MotorFL.write(50);
+    MotorFR.write(0);
+    MotorBL.write(0);
+    MotorBR.write(0);
+    delay(500);
 
-        inputString = "";
-        stringComplete = false;
-    }
+    MotorFL.write(0);
+    MotorFR.write(50);
+    MotorBL.write(0);
+    MotorBR.write(0);
+    delay(500);
+
+    MotorFL.write(0);
+    MotorFR.write(0);
+    MotorBL.write(50);
+    MotorBR.write(0);
+    delay(500);
+
+    MotorFL.write(0);
+    MotorFR.write(0);
+    MotorBL.write(0);
+    MotorBR.write(50);
+    delay(500);
+    // serialEvent();
+    // if (stringComplete)
+    // {
+    //     Serial.print("input: ");
+    //     Serial.println(inputString);
+    //     if (inputString.startsWith("Step"))
+    //     {
+    //         Serial.println("Ack: Step");
+    //         delay(100);
+    //         int spaceIndex = inputString.indexOf(' ');
+    //         if (spaceIndex != -1)
+    //         {
+    //             String value = inputString.substring(spaceIndex + 1);
+    //             int amount = value.toInt();
+    //             Serial.println(amount);
+    //             MotorFL.write(amount);
+    //             MotorFR.write(amount);
+    //             MotorBL.write(amount);
+    //             MotorBR.write(amount);
+    //         }
+    //     }
+
+    //     inputString = "";
+    //     stringComplete = false;
+    // }
 }
 
 void serialEvent()

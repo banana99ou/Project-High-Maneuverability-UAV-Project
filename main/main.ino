@@ -46,8 +46,17 @@ float rpy[3];
 
 int i = 0;
 
-// Pins associated with Each channel of Reciever
-int ReceiverPins[] = {25, 26, 27, 32, 33, 34};
+#include <HardwareSerial.h>
+
+HardwareSerial iBusSerial(2);  // Using UART2 (RX2 = GPIO 16, TX2 = GPIO 17)
+
+#define NUM_CHANNELS 6 // Adjust based on the number of channels in your receiver
+// iBus protocol specific constants
+#define IBUS_HEADER 0x20
+#define IBUS_LENGTH 0x16 // Total 32 bytes
+// Buffer for iBus data
+uint8_t ibusData[32];
+uint16_t channelData[NUM_CHANNELS];
 
 // PID values of each channel R P Y
 float P[3] = {1,1,1};
@@ -64,7 +73,7 @@ float Prev_e[3] = {0, 0, 0};
 float integral[3] = {0, 0, 0};
 float g[3];
 float Motor_Speed[4] = {0, 0, 0, 0};
-int Motor_Pins[4] = {16, 17, 18, 19};
+int Motor_Pins[4] = {18, 19, 12, 14};
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -102,6 +111,7 @@ void setup() {
     MotorBR.write(0);
     delay(1000);
     
+    iBusSerial.begin(115200, SERIAL_8N1, 16, 17);
     
     // join I2C bus (I2Cdev library doesn't do this automatically)
     #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -192,30 +202,45 @@ void setup() {
 // ================================================================
 
 void loop() {
-    // read Recv pins
-    int Roll_raw     = pulseIn(ReceiverPins[0], HIGH, 25000);
-    int Pitch_raw    = pulseIn(ReceiverPins[1], HIGH, 25000);
-    int Yaw_raw      = pulseIn(ReceiverPins[2], HIGH, 25000);
-    int Throttle_raw = pulseIn(ReceiverPins[3], HIGH, 25000);
 
-    int Roll        = map(constrain(Roll_raw,     1051, 1885), 1051, 1885, -254,  254);
-    int Pitch       = map(constrain(Pitch_raw,    1051, 1885), 1051, 1885,  254, -254);
-    int Yaw         = map(constrain(Yaw_raw,      1051, 1885), 1051, 1885, -254,  254);
-    int Throttle    = map(constrain(Throttle_raw, 1051, 1885), 1051, 1885, -254,  254);
+    if (iBusSerial.available()) {
+        readiBusData();
+    }
+
+    int Roll_raw     = channelData[0];
+    int Pitch_raw    = channelData[1];
+    int Yaw_raw      = channelData[3];
+    int Throttle_raw = channelData[2];
+
+    int Roll        = map(constrain(Roll_raw,     1000, 2000), 1000, 2000, -254,  254);
+    int Pitch       = map(constrain(Pitch_raw,    1000, 2000), 1000, 2000, -254,  254);
+    int Yaw         = map(constrain(Yaw_raw,      1000, 2000), 1000, 2000, -254,  254);
+    int Throttle    = map(constrain(Throttle_raw, 1000, 2000), 1000, 2000, 0,  510);
+
+    Serial.print("Roll: ");
+    Serial.print(Roll);
+    Serial.print(", Pitch: ");
+    Serial.print(Pitch);
+    Serial.print(", Yaw: ");
+    Serial.println(Yaw);
 
     // set deadzone
     if (abs(Roll) < 24){
         Roll = 0;
     }
-    // if (abs(Pitch) < 24){
-    //     Pitch = 0;
-    // }
+    if (abs(Pitch) < 24){
+        Pitch = 0;
+    }
     if (abs(Yaw) < 24){
         Yaw = 0;
     }
     if (abs(Throttle) < 24){
         Throttle = 0;
     }
+
+    RPY_Setpoint[0] = Roll;
+    RPY_Setpoint[1] = Pitch;
+    RPY_Setpoint[2] = Yaw;
     
     // calculate dt
     t_n = micros();
@@ -251,11 +276,6 @@ void loop() {
         // Serial.print(rpy[i]);
     }
 
-    // Serial.println("");
-    
-    // get setpoint from receiver
-    // ReadReceiver(ReceiverPins, RPY_Setpoint[0], RPY_Setpoint[1], RPY_Setpoint[2]);
-
     // Serial.print("calculate Error");
     for(int i=0; i<3; i++){
         e[i] = RPY_Setpoint[i] - rpy[i];
@@ -264,7 +284,7 @@ void loop() {
     }
     // Serial.println("");
 
-    Serial.print("calculate PID ctl cmd ");
+    // Serial.print("calculate PID ctl cmd ");
     for(int i=0; i<3; i++){
         integral[i] += e[i] * dt;
         g[i] = P[i]*e[i] + I[i]*(integral[i]) + D[i]*(e[i]-Prev_e[i])/dt;
@@ -272,24 +292,45 @@ void loop() {
         Serial.print(g[i]);
     }
 
-    // Serial.println("");
-
     // convert PID ctl cmd to motor ctl cmd
     //! check max and min value of Motor_Speed by experiments
-    Motor_Speed[0] = (-g[0] + g[1] + g[2]);
-    Motor_Speed[1] = (g[0] + g[1] - g[2]);
-    Motor_Speed[2] = (-g[0] - g[1] - g[2]);
-    Motor_Speed[3] = (g[0] - g[1] + g[2]);
+    Motor_Speed[0] = (-g[0] - g[1] + g[2]);
+    Motor_Speed[1] = (-g[0] + g[1] - g[2]);
+    Motor_Speed[2] = (g[0] - g[1] - g[2]);
+    Motor_Speed[3] = (g[0] + g[1] + g[2]);
 
     Serial.print(", Motor before mapping: ");
     Serial.print(Motor_Speed[0]);
 
     for(int i=0; i<4; i++){
-        Motor_Speed[i] = constrain(Motor_Speed[i], 0, 100);
+        Motor_Speed[i] = constrain(Motor_Speed[i], 0, 100);//*channelData[4];
     }
 
     Serial.print(", Motor after mapping: ");
-    Serial.println(Motor_Speed[0]);
+    Serial.print(Motor_Speed[0]);
+
+    // Serial.print(", Throttle: ");
+    // Serial.println(Throttle);
+
+    // failsafe
+    // if(abs(rpy[0])>10){
+    //     Motor_Speed[0] = 0;
+    //     Motor_Speed[1] = 0;
+    //     Motor_Speed[2] = 0;
+    //     Motor_Speed[3] = 0;
+    // }
+    // if(abs(rpy[1])>10){
+    //     Motor_Speed[0] = 0;
+    //     Motor_Speed[1] = 0;
+    //     Motor_Speed[2] = 0;
+    //     Motor_Speed[3] = 0;
+    // }
+    // if(abs(rpy[2])>10){
+    //     Motor_Speed[0] = 0;
+    //     Motor_Speed[1] = 0;
+    //     Motor_Speed[2] = 0;
+    //     Motor_Speed[3] = 0;
+    // }
 
     MotorFL.write(Motor_Speed[0]);
     MotorFR.write(Motor_Speed[1]);
@@ -297,37 +338,20 @@ void loop() {
     MotorBR.write(Motor_Speed[3]);
 }
 
-// void ReadReceiver(int ReceiverPin[], float& ROLL, float& PITCH, float& YAW) {
-//     /*
-//     reads setpoint from receiver via pulseIn()
-//     and returns data by reference
-//     */
-//     //!!Each channels range should be tested
-//     int ch1_raw = constrain(pulseIn(ReceiverPin[0], HIGH), 1044, 1885);
-//     int ch2_raw = constrain(pulseIn(ReceiverPin[1], HIGH), 1135, 1800);
-//     int ch3_raw = constrain(pulseIn(ReceiverPin[2], HIGH, 25000), 1013, 1941);
-//     int ch4_raw = constrain(pulseIn(ReceiverPin[3], HIGH), 1044, 1885);
-//     int ch5_raw = constrain(pulseIn(ReceiverPin[4], HIGH), 1135, 1800);
+bool readiBusData() {
+  // Read the full 32-byte iBus packet
+  if (iBusSerial.available() >= IBUS_LENGTH) {
+    iBusSerial.readBytes(ibusData, IBUS_LENGTH);
 
-//     // Invert or trim each channel here
-//     float roll  = map(ch1_raw, 1044, 1885, -254, 254);
-//     float pitch = map(ch2_raw, 1135, 1800, 254, -254);
-//     float yaw   = map(ch3_raw, 1013, 1941, -254, 254);
-
-//     // Setting Dead jone of joystick
-//     //Serial.print(ROLL);
-//     if(abs(roll) < 24){
-//     roll = 0;
-//     }
-//     //Serial.println(ROLL);
-//     if(abs(pitch) < 24){
-//     pitch = 0;
-//     }
-//     if(abs(yaw) < 30){
-//     yaw = 0;
-//     }
-
-//     ROLL  = roll;
-//     PITCH = pitch;
-//     YAW   = yaw;
-// }
+    // Check if it's an iBus header
+    if (ibusData[0] == IBUS_HEADER) {
+      // Parse channel data from the packet
+      for (int i = 0; i < NUM_CHANNELS; i++) {
+        // Channels are 2 bytes each (low byte, high byte)
+        channelData[i] = ibusData[2 + i * 2] | (ibusData[3 + i * 2] << 8);
+      }
+      return true;
+    }
+  }
+  return false;
+}
