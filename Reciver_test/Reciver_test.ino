@@ -1,56 +1,54 @@
-int ReceiverPins[] = {2, 8, 4, 5};
+#include <HardwareSerial.h>
 
+HardwareSerial iBusSerial(2);  // Using UART2 (RX2 = GPIO 16, TX2 = GPIO 17)
 
-void setup(){
-    Serial.begin(115200);
-    // for (i = 0; i < 4; i++){
-    //     pinMode(ReceiverPins[i], INPUT);
-    // }
-    digitalWrite(12, HIGH);
+#define NUM_CHANNELS 6 // Adjust based on the number of channels in your receiver
+
+// iBus protocol specific constants
+#define IBUS_HEADER 0x20
+#define IBUS_LENGTH 0x16 // Total 32 bytes
+
+// Buffer for iBus data
+uint8_t ibusData[32];
+uint16_t channelData[NUM_CHANNELS];
+
+void setup() {
+  Serial.begin(115200);  // Serial for debugging
+  iBusSerial.begin(115200, SERIAL_8N1, 16, 17);  // iBus runs at 115200 baud rate, RX = 16, TX = 17
+
+  Serial.println("iBus Reading Example - ESP32");
 }
 
-
-void loop(){
-    int Roll_raw     = pulseIn(ReceiverPins[0], HIGH, 25000);
-    int Pitch_raw    = pulseIn(ReceiverPins[1], HIGH, 25000);
-    int Yaw_raw      = pulseIn(ReceiverPins[2], HIGH, 25000);
-    int Throttle_raw = pulseIn(ReceiverPins[3], HIGH, 25000);
-
-    int Roll        = map(constrain(Roll_raw,     1051, 1885), 1051, 1885, -254,  254);
-    int Pitch       = map(constrain(Pitch_raw,    1051, 1885), 1051, 1885,  254, -254);
-    int Yaw         = map(constrain(Yaw_raw,      1051, 1885), 1051, 1885, -254,  254);
-    int Throttle    = map(constrain(Throttle_raw, 1051, 1885), 1051, 1885, -254,  254);
-
-    if (abs(Roll) < 24){
-        Roll = 0;
+void loop() {
+  if (iBusSerial.available()) {
+    if (readiBusData()) {
+      // Successfully read iBus data, now process channels
+      for (int i = 0; i < NUM_CHANNELS; i++) {
+        Serial.print("Channel ");
+        Serial.print(i + 1);
+        Serial.print(": ");
+        Serial.println(channelData[i]);
+      }
+      Serial.println();
     }
-    // if (abs(Pitch) < 24){
-    //     Pitch = 0;
-    // }
-    if (abs(Yaw) < 24){
-        Yaw = 0;
+  }
+}
+
+// Function to read iBus data and store in channelData
+bool readiBusData() {
+  // Read the full 32-byte iBus packet
+  if (iBusSerial.available() >= IBUS_LENGTH) {
+    iBusSerial.readBytes(ibusData, IBUS_LENGTH);
+
+    // Check if it's an iBus header
+    if (ibusData[0] == IBUS_HEADER) {
+      // Parse channel data from the packet
+      for (int i = 0; i < NUM_CHANNELS; i++) {
+        // Channels are 2 bytes each (low byte, high byte)
+        channelData[i] = ibusData[2 + i * 2] | (ibusData[3 + i * 2] << 8);
+      }
+      return true;
     }
-    if (abs(Throttle) < 24){
-        Throttle = 0;
-    }
-
-    Serial.print("Roll_raw:");
-    Serial.print(Roll_raw);
-    Serial.print(" , Roll:");
-    Serial.print(Roll);
-
-    Serial.print(" , Pitch_raw:");
-    Serial.print(Pitch_raw);
-    Serial.print(" , Pitch:");
-    Serial.print(Pitch);
-
-    Serial.print(" , Yaw_raw:");
-    Serial.print(Yaw_raw);
-    Serial.print(" , Yaw:");
-    Serial.print(Yaw);
-
-    Serial.print(" , Throttle_raw:");
-    Serial.print(Throttle_raw);
-    Serial.print(" , Throttle:");
-    Serial.println(Throttle);
+  }
+  return false;
 }
