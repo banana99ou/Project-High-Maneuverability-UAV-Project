@@ -241,8 +241,8 @@ void loop() {
     for(int i=0; i<3; i++){
         integral[i] += e[i] * dt;
         g[i] = P[i]*e[i] + I[i]*(integral[i]) + D[i]*(e[i]-Prev_e[i])/dt;
-        Serial.print(", g: ");
-        Serial.print(g[i]);
+        // Serial.print(", g: ");
+        // Serial.print(g[i]);
     }
 
     // convert PID ctl cmd to motor ctl cmd
@@ -264,6 +264,14 @@ void loop() {
         Motor_Speed[1] = 0;
         Motor_Speed[2] = 0;
         Motor_Speed[3] = 0;
+
+        delay(100);
+        
+        MotorFL.write(Motor_Speed[0]);
+        MotorFR.write(Motor_Speed[1]);
+        MotorBL.write(Motor_Speed[2]);
+        MotorBR.write(Motor_Speed[3]);
+        
         while (1){
             delay(100);
         }
@@ -274,6 +282,14 @@ void loop() {
         Motor_Speed[1] = 0;
         Motor_Speed[2] = 0;
         Motor_Speed[3] = 0;
+        
+        delay(100);
+            
+        MotorFL.write(Motor_Speed[0]);
+        MotorFR.write(Motor_Speed[1]);
+        MotorBL.write(Motor_Speed[2]);
+        MotorBR.write(Motor_Speed[3]);
+
         while (1){
             delay(100);
         }
