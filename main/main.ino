@@ -1,9 +1,5 @@
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
-//#include "MPU6050.h" // not necessary if using MotionApps include file
-
-// Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
-// is used in I2Cdev.h
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
     #include "Wire.h"
 #endif
@@ -203,45 +199,56 @@ void setup() {
 
 void loop() {
 
-    if (iBusSerial.available()) {
-        readiBusData();
-    }
+    // if (iBusSerial.available()) {
+    //     readiBusData();
+    // }
 
-    int Roll_raw     = channelData[0];
-    int Pitch_raw    = channelData[1];
-    int Yaw_raw      = channelData[3];
-    int Throttle_raw = channelData[2];
+    // int Roll_raw     = channelData[0];
+    // int Pitch_raw    = channelData[1];
+    // int Yaw_raw      = channelData[3];
+    // int Throttle_raw = channelData[2];
 
-    int Roll        = map(constrain(Roll_raw,     1000, 2000), 1000, 2000, -254,  254);
-    int Pitch       = map(constrain(Pitch_raw,    1000, 2000), 1000, 2000, -254,  254);
-    int Yaw         = map(constrain(Yaw_raw,      1000, 2000), 1000, 2000, -254,  254);
-    int Throttle    = map(constrain(Throttle_raw, 1000, 2000), 1000, 2000, 0,  510);
+    // int Roll        = map(constrain(Roll_raw,     1000, 2000), 1000, 2000, -254,  254);
+    // int Pitch       = map(constrain(Pitch_raw,    1000, 2000), 1000, 2000, -254,  254);
+    // int Yaw         = map(constrain(Yaw_raw,      1000, 2000), 1000, 2000, -254,  254);
+    // int Throttle    = map(constrain(Throttle_raw, 1000, 2000), 1000, 2000, 0,  508);
 
-    Serial.print("Roll: ");
-    Serial.print(Roll);
-    Serial.print(", Pitch: ");
-    Serial.print(Pitch);
-    Serial.print(", Yaw: ");
-    Serial.println(Yaw);
+    // // set deadzone
+    // if (abs(Roll) < 24){
+    //     Roll = 0;
+    // }
+    // if (abs(Pitch) < 24){
+    //     Pitch = 0;
+    // }
+    // if (abs(Yaw) < 24){
+    //     Yaw = 0;
+    // }
+    // if (abs(Throttle) < 24){
+    //     Throttle = 0;
+    // }
 
-    // set deadzone
-    if (abs(Roll) < 24){
-        Roll = 0;
-    }
-    if (abs(Pitch) < 24){
-        Pitch = 0;
-    }
-    if (abs(Yaw) < 24){
-        Yaw = 0;
-    }
-    if (abs(Throttle) < 24){
-        Throttle = 0;
-    }
-
-    RPY_Setpoint[0] = Roll;
-    RPY_Setpoint[1] = Pitch;
-    RPY_Setpoint[2] = Yaw;
+    // RPY_Setpoint[0] = Roll;
+    // RPY_Setpoint[1] = Pitch;
+    // RPY_Setpoint[2] = Yaw;
     
+    // Serial.print("Roll: ");
+    // Serial.print(Roll);
+    // Serial.print(", Pitch: ");
+    // Serial.print(Pitch);
+    // Serial.print(", Yaw: ");
+    // Serial.print(Yaw);
+    // Serial.print(", Throttle: ");
+    // Serial.print(Throttle);
+
+    // Serial.print("Roll_Setpoint: ");
+    // Serial.print(RPY_Setpoint[0]);
+    // Serial.print(", Pitch_Setpoint: ");
+    // Serial.print(RPY_Setpoint[1]);
+    // Serial.print(", Yaw: ");
+    // Serial.print(RPY_Setpoint[2]);
+    // Serial.print(", Throttle_Setpoint: ");
+    // Serial.println(Throttle);
+
     // calculate dt
     t_n = micros();
     dt = t_n - t_b;
@@ -269,20 +276,17 @@ void loop() {
         digitalWrite(LED_PIN, blinkState);
     }
 
-    // Serial.print("Roll Pitch Yaw");
-    for(int i=0; i<3; i++){
-        rpy[i] = ypr[2-i] * 180/M_PI;
-        // Serial.print(", ");
-        // Serial.print(rpy[i]);
-    }
-
-    // Serial.print("calculate Error");
+    rpy[0] = ypr[2] * 180/M_PI;
+    rpy[1] = ypr[1] * 180/M_PI;
+    rpy[2] = ypr[0] * 180/M_PI;
+    
+    Serial.print("calculate Error");
     for(int i=0; i<3; i++){
         e[i] = RPY_Setpoint[i] - rpy[i];
-        // Serial.print(", ");
-        // Serial.print(e[i]);
+        Serial.print(", ");
+        Serial.print(e[i]);
     }
-    // Serial.println("");
+    Serial.println("");
 
     // Serial.print("calculate PID ctl cmd ");
     for(int i=0; i<3; i++){
