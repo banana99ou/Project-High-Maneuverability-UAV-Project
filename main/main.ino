@@ -15,7 +15,7 @@ MPU6050 mpu;
 #define OUTPUT_READABLE_YAWPITCHROLL
 
 #define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
-#define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
+#define LED_PIN 2 // (Arduino is 13, Teensy is 11, Teensy++ is 6, ESP32 is 2)
 bool blinkState = false;
 
 // MPU control/status vars
@@ -264,12 +264,19 @@ void loop() {
         Motor_Speed[1] = 0;
         Motor_Speed[2] = 0;
         Motor_Speed[3] = 0;
+        while (1){
+            delay(100);
+        }
+        
     }
     if(abs(rpy[1])>Failsafe_Th){
         Motor_Speed[0] = 0;
         Motor_Speed[1] = 0;
         Motor_Speed[2] = 0;
         Motor_Speed[3] = 0;
+        while (1){
+            delay(100);
+        }
     }
 
     // send motor cmd to motor
