@@ -32,6 +32,56 @@ void loop() {
       Serial.println();
     }
   }
+
+  // if (iBusSerial.available()) {
+  //     readiBusData();
+  // }
+
+  // int Roll_raw     = channelData[0];
+  // int Pitch_raw    = channelData[1];
+  // int Yaw_raw      = channelData[3];
+  // int Throttle_raw = channelData[2];
+
+  // int Roll        = map(constrain(Roll_raw,     1000, 2000), 1000, 2000, -254,  254);
+  // int Pitch       = map(constrain(Pitch_raw,    1000, 2000), 1000, 2000, -254,  254);
+  // int Yaw         = map(constrain(Yaw_raw,      1000, 2000), 1000, 2000, -254,  254);
+  // int Throttle    = map(constrain(Throttle_raw, 1000, 2000), 1000, 2000, 0,  508);
+
+  // // set deadzone
+  // if (abs(Roll) < 24){
+  //     Roll = 0;
+  // }
+  // if (abs(Pitch) < 24){
+  //     Pitch = 0;
+  // }
+  // if (abs(Yaw) < 24){
+  //     Yaw = 0;
+  // }
+  // if (abs(Throttle) < 24){
+  //     Throttle = 0;
+  // }
+
+  // RPY_Setpoint[0] = Roll;
+  // RPY_Setpoint[1] = Pitch;
+  // RPY_Setpoint[2] = Yaw;
+  
+  // Serial.print("Roll: ");
+  // Serial.print(Roll);
+  // Serial.print(", Pitch: ");
+  // Serial.print(Pitch);
+  // Serial.print(", Yaw: ");
+  // Serial.print(Yaw);
+  // Serial.print(", Throttle: ");
+  // Serial.print(Throttle);
+
+  // Serial.print("Roll_Setpoint: ");
+  // Serial.print(RPY_Setpoint[0]);
+  // Serial.print(", Pitch_Setpoint: ");
+  // Serial.print(RPY_Setpoint[1]);
+  // Serial.print(", Yaw: ");
+  // Serial.print(RPY_Setpoint[2]);
+  // Serial.print(", Throttle_Setpoint: ");
+  // Serial.println(Throttle);
 }
 
 // Function to read iBus data and store in channelData

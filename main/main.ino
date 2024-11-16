@@ -198,57 +198,6 @@ void setup() {
 // ================================================================
 
 void loop() {
-
-    // if (iBusSerial.available()) {
-    //     readiBusData();
-    // }
-
-    // int Roll_raw     = channelData[0];
-    // int Pitch_raw    = channelData[1];
-    // int Yaw_raw      = channelData[3];
-    // int Throttle_raw = channelData[2];
-
-    // int Roll        = map(constrain(Roll_raw,     1000, 2000), 1000, 2000, -254,  254);
-    // int Pitch       = map(constrain(Pitch_raw,    1000, 2000), 1000, 2000, -254,  254);
-    // int Yaw         = map(constrain(Yaw_raw,      1000, 2000), 1000, 2000, -254,  254);
-    // int Throttle    = map(constrain(Throttle_raw, 1000, 2000), 1000, 2000, 0,  508);
-
-    // // set deadzone
-    // if (abs(Roll) < 24){
-    //     Roll = 0;
-    // }
-    // if (abs(Pitch) < 24){
-    //     Pitch = 0;
-    // }
-    // if (abs(Yaw) < 24){
-    //     Yaw = 0;
-    // }
-    // if (abs(Throttle) < 24){
-    //     Throttle = 0;
-    // }
-
-    // RPY_Setpoint[0] = Roll;
-    // RPY_Setpoint[1] = Pitch;
-    // RPY_Setpoint[2] = Yaw;
-    
-    // Serial.print("Roll: ");
-    // Serial.print(Roll);
-    // Serial.print(", Pitch: ");
-    // Serial.print(Pitch);
-    // Serial.print(", Yaw: ");
-    // Serial.print(Yaw);
-    // Serial.print(", Throttle: ");
-    // Serial.print(Throttle);
-
-    // Serial.print("Roll_Setpoint: ");
-    // Serial.print(RPY_Setpoint[0]);
-    // Serial.print(", Pitch_Setpoint: ");
-    // Serial.print(RPY_Setpoint[1]);
-    // Serial.print(", Yaw: ");
-    // Serial.print(RPY_Setpoint[2]);
-    // Serial.print(", Throttle_Setpoint: ");
-    // Serial.println(Throttle);
-
     // calculate dt
     t_n = micros();
     dt = t_n - t_b;
@@ -276,19 +225,19 @@ void loop() {
         digitalWrite(LED_PIN, blinkState);
     }
 
+    // rotate IMU data
     rpy[0] = ypr[2] * 180/M_PI;
     rpy[1] = ypr[1] * 180/M_PI;
     rpy[2] = ypr[0] * 180/M_PI;
-    
-    Serial.print("calculate Error");
+
+    // calculate Error
     for(int i=0; i<3; i++){
         e[i] = RPY_Setpoint[i] - rpy[i];
         Serial.print(", ");
         Serial.print(e[i]);
     }
-    Serial.println("");
 
-    // Serial.print("calculate PID ctl cmd ");
+    // calculate PID ctl cmd
     for(int i=0; i<3; i++){
         integral[i] += e[i] * dt;
         g[i] = P[i]*e[i] + I[i]*(integral[i]) + D[i]*(e[i]-Prev_e[i])/dt;
@@ -302,40 +251,28 @@ void loop() {
     Motor_Speed[1] = (-g[0] + g[1] - g[2]);
     Motor_Speed[2] = (g[0] - g[1] - g[2]);
     Motor_Speed[3] = (g[0] + g[1] + g[2]);
-
-    Serial.print(", Motor before mapping: ");
-    Serial.print(Motor_Speed[0]);
-
+    
+    // constrain Motor cmd
     for(int i=0; i<4; i++){
-        Motor_Speed[i] = constrain(Motor_Speed[i], 0, 100);//*channelData[4];
+        Motor_Speed[i] = constrain(Motor_Speed[i], 0, 100);
     }
 
-    Serial.print(", Motor after mapping: ");
-    Serial.print(Motor_Speed[0]);
-
-    // Serial.print(", Throttle: ");
-    // Serial.println(Throttle);
-
     // failsafe
-    // if(abs(rpy[0])>10){
-    //     Motor_Speed[0] = 0;
-    //     Motor_Speed[1] = 0;
-    //     Motor_Speed[2] = 0;
-    //     Motor_Speed[3] = 0;
-    // }
-    // if(abs(rpy[1])>10){
-    //     Motor_Speed[0] = 0;
-    //     Motor_Speed[1] = 0;
-    //     Motor_Speed[2] = 0;
-    //     Motor_Speed[3] = 0;
-    // }
-    // if(abs(rpy[2])>10){
-    //     Motor_Speed[0] = 0;
-    //     Motor_Speed[1] = 0;
-    //     Motor_Speed[2] = 0;
-    //     Motor_Speed[3] = 0;
-    // }
+    int Failsafe_Th = 45;
+    if(abs(rpy[0])>Failsafe_Th){
+        Motor_Speed[0] = 0;
+        Motor_Speed[1] = 0;
+        Motor_Speed[2] = 0;
+        Motor_Speed[3] = 0;
+    }
+    if(abs(rpy[1])>Failsafe_Th){
+        Motor_Speed[0] = 0;
+        Motor_Speed[1] = 0;
+        Motor_Speed[2] = 0;
+        Motor_Speed[3] = 0;
+    }
 
+    // send motor cmd to motor
     MotorFL.write(Motor_Speed[0]);
     MotorFR.write(Motor_Speed[1]);
     MotorBL.write(Motor_Speed[2]);
