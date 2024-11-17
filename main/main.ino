@@ -47,13 +47,16 @@ int i = 0;
 HardwareSerial iBusSerial(2);  // Using UART2 (RX2 = GPIO 16, TX2 = GPIO 17)
 
 #define NUM_CHANNELS 6 // Adjust based on the number of channels in your receiver
+
 // iBus protocol specific constants
 #define IBUS_HEADER 0x20
 #define IBUS_LENGTH 0x16 // Total 32 bytes
+
 // Buffer for iBus data
 uint8_t ibusData[32];
 uint16_t channelData[NUM_CHANNELS];
 
+// Channel variable
 int Roll_raw     = 0;
 int Pitch_raw    = 0;
 int Yaw_raw      = 0;
@@ -72,13 +75,15 @@ float D[3] = {0,0,0};
 float RPY_Setpoint[3] = {0,0,0};
 
 // PID control variables
-float dt;
+float dt; // Delta T
 float t_n, t_b; // time now, time before
-float e[3];
+float e[3]; // Error
 float Prev_e[3] = {0, 0, 0};
 float integral[3] = {0, 0, 0};
-float g[3];
+float g[3]; // resultant PID cmd
 float Motor_Speed[4] = {0, 0, 0, 0};
+
+// Motor Pins
 int Motor_Pins[4] = {19, 18, 14, 12};
 
 // ================================================================
@@ -93,19 +98,23 @@ void dmpDataReady() {
 // ================================================================
 // ===                      INITIAL SETUP                       ===
 // ================================================================
+
+// create servo object to control a ESC
 #include <ESP32Servo.h>
-Servo MotorFL;  // create servo object to control a ESC
+Servo MotorFL;  
 Servo MotorFR;
 Servo MotorBL;
 Servo MotorBR;
 
 void setup() {
-    MotorFL.attach(Motor_Pins[0], 1000, 2000);  // create servo object to control a ESC
+
+    // Attach servo object to ESC
+    MotorFL.attach(Motor_Pins[0], 1000, 2000);  
     MotorFR.attach(Motor_Pins[1], 1000, 2000);
     MotorBL.attach(Motor_Pins[2], 1000, 2000);
     MotorBR.attach(Motor_Pins[3], 1000, 2000);
 
-    // calibrate esc
+    // Calibrate esc
     MotorFL.write(100);
     MotorFR.write(100);
     MotorBL.write(100);
@@ -116,7 +125,12 @@ void setup() {
     MotorBL.write(0);
     MotorBR.write(0);
     delay(1000);
+    /* 
+    ESC requires calibration of Throttle range 
+    this section sets minimum and maximum throttle of each motor
+    */
     
+    // Begin iBus communication baud: 115200 RX: 16 TX: 17
     iBusSerial.begin(115200, SERIAL_8N1, 16, 17);
     
     // join I2C bus (I2Cdev library doesn't do this automatically)
@@ -148,12 +162,6 @@ void setup() {
     Serial.println(F("Testing device connections..."));
     Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
 
-    // wait for ready
-//    Serial.println(F("\nSend any character to begin DMP programming and demo: "));
-//    while (Serial.available() && Serial.read()); // empty buffer
-//    while (!Serial.available());                 // wait for data
-//    while (Serial.available() && Serial.read()); // empty buffer again
-
     // load and configure the DMP
     Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
@@ -166,10 +174,12 @@ void setup() {
 
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
+
         // Calibration Time: generate offsets and calibrate our MPU6050
         mpu.CalibrateAccel(6);
         mpu.CalibrateGyro(6);
         mpu.PrintActiveOffsets();
+
         // turn on the DMP, now that it's ready
         Serial.println(F("Enabling DMP..."));
         mpu.setDMPEnabled(true);
@@ -208,7 +218,8 @@ void setup() {
 // ================================================================
 
 void loop() {
-
+    
+    // Read from receiever
     if (iBusSerial.available()) {
         if(readiBusData()) {
             Roll_raw     = channelData[0];
@@ -223,7 +234,7 @@ void loop() {
         }
     }
 
-    // set deadzone
+    // Set deadzone of transmitter joystick
     if (abs(Roll) < 24){
         Roll = 0;
     }
@@ -236,6 +247,8 @@ void loop() {
     // if (abs(Throttle) < 50){
     //     Throttle = 0;
     // }
+
+    // Make variable to arm motors
     float kill_switch = Throttle / 500;
 
     RPY_Setpoint[0] = Roll;
@@ -246,14 +259,14 @@ void loop() {
     // Serial.print(Roll);
     // Serial.print(", Pitch: ");
     // Serial.print(Pitch);
-    Serial.print(", Yaw: ");
-    Serial.print(Yaw);
-    Serial.print(", Throttle raw: ");
-    Serial.print(Throttle_raw);
-    Serial.print(", Throttle: ");
-    Serial.print(Throttle);
-    Serial.print(", kill_switch: ");
-    Serial.println(kill_switch);
+    // Serial.print(", Yaw: ");
+    // Serial.print(Yaw);
+    // Serial.print(", Throttle raw: ");
+    // Serial.print(Throttle_raw);
+    // Serial.print(", Throttle: ");
+    // Serial.print(Throttle);
+    // Serial.print(", kill_switch: ");
+    // Serial.println(kill_switch);
 
     // calculate dt
     t_n = micros();
@@ -287,14 +300,14 @@ void loop() {
     rpy[1] = ypr[2] * 180/M_PI;
     rpy[2] = ypr[0] * 180/M_PI;
 
-    // calculate Error
+    // Calculate Error
     for(int i=0; i<3; i++){
         e[i] = RPY_Setpoint[i] - rpy[i];
         // Serial.print(", ");
         // Serial.print(e[i]);
     }
 
-    // calculate PID ctl cmd
+    // Calculate PID ctl cmd
     for(int i=0; i<3; i++){
         integral[i] += e[i] * dt;
         g[i] = P[i]*e[i] + I[i]*(integral[i]) + D[i]*(e[i]-Prev_e[i])/dt;
@@ -302,19 +315,20 @@ void loop() {
         // Serial.print(g[i]);
     }
 
-    // convert PID ctl cmd to motor ctl cmd
+    // Convert PID ctl cmd to motor ctl cmd
     //! check max and min value of Motor_Speed by experiments
     Motor_Speed[0] = ( g[0] - g[1] - g[2]) * kill_switch;
     Motor_Speed[1] = (-g[0] - g[1] + g[2]) * kill_switch;
     Motor_Speed[2] = ( g[0] + g[1] + g[2]) * kill_switch;
     Motor_Speed[3] = (-g[0] + g[1] - g[2]) * kill_switch; 
     
-    // constrain Motor cmd
+    // Constrain Motor cmd
     for(int i=0; i<4; i++){
         Motor_Speed[i] = constrain(Motor_Speed[i], 0, 99);
     }
 
-    // failsafe
+    // Failsafe
+    // kill motor and stop program when angle is bigger than Failsafe threshold
     int Failsafe_Th = 45;
     if(abs(rpy[0])>Failsafe_Th){
         Motor_Speed[0] = 0;
@@ -328,6 +342,8 @@ void loop() {
         MotorFR.write(Motor_Speed[1]);
         MotorBL.write(Motor_Speed[2]);
         MotorBR.write(Motor_Speed[3]);
+
+        delay(100); // make sure motor stops
         
         while (1){
             delay(100);
@@ -347,8 +363,10 @@ void loop() {
         MotorBL.write(Motor_Speed[2]);
         MotorBR.write(Motor_Speed[3]);
 
+        delay(100);
+
         while (1){
-            delay(100);
+            delay(100); // make sure motor stops
         }
     }
 
