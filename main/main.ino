@@ -54,6 +54,16 @@ HardwareSerial iBusSerial(2);  // Using UART2 (RX2 = GPIO 16, TX2 = GPIO 17)
 uint8_t ibusData[32];
 uint16_t channelData[NUM_CHANNELS];
 
+int Roll_raw     = 0;
+int Pitch_raw    = 0;
+int Yaw_raw      = 0;
+int Throttle_raw = 0;
+
+int Roll        = 0;
+int Pitch       = 0;
+int Yaw         = 0;
+int Throttle    = 0;
+
 // PID values of each channel R P Y
 float P[3] = {1,1,1};
 float I[3] = {0,0,0};
@@ -69,7 +79,7 @@ float Prev_e[3] = {0, 0, 0};
 float integral[3] = {0, 0, 0};
 float g[3];
 float Motor_Speed[4] = {0, 0, 0, 0};
-int Motor_Pins[4] = {18, 19, 12, 14};
+int Motor_Pins[4] = {19, 18, 14, 12};
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -198,6 +208,53 @@ void setup() {
 // ================================================================
 
 void loop() {
+
+    if (iBusSerial.available()) {
+        if(readiBusData()) {
+            Roll_raw     = channelData[0];
+            Pitch_raw    = channelData[1];
+            Yaw_raw      = channelData[3];
+            Throttle_raw = channelData[2];
+
+            Roll        = map(constrain(Roll_raw,     1000, 2000), 1000, 2000, -254,  254);
+            Pitch       = map(constrain(Pitch_raw,    1000, 2000), 1000, 2000, -254,  254);
+            Yaw         = map(constrain(Yaw_raw,      1000, 2000), 1000, 2000, -254,  254);
+            Throttle    = map(constrain(Throttle_raw, 1000, 2000), 1000, 1990, 0,  510);
+        }
+    }
+
+    // set deadzone
+    if (abs(Roll) < 24){
+        Roll = 0;
+    }
+    if (abs(Pitch) < 24){
+        Pitch = 0;
+    }
+    if (abs(Yaw) < 24){
+        Yaw = 0;
+    }
+    // if (abs(Throttle) < 50){
+    //     Throttle = 0;
+    // }
+    float kill_switch = Throttle / 500;
+
+    RPY_Setpoint[0] = Roll;
+    RPY_Setpoint[1] = Pitch;
+    RPY_Setpoint[2] = Yaw;
+
+    // Serial.print("Roll: ");
+    // Serial.print(Roll);
+    // Serial.print(", Pitch: ");
+    // Serial.print(Pitch);
+    Serial.print(", Yaw: ");
+    Serial.print(Yaw);
+    Serial.print(", Throttle raw: ");
+    Serial.print(Throttle_raw);
+    Serial.print(", Throttle: ");
+    Serial.print(Throttle);
+    Serial.print(", kill_switch: ");
+    Serial.println(kill_switch);
+
     // calculate dt
     t_n = micros();
     dt = t_n - t_b;
@@ -226,15 +283,15 @@ void loop() {
     }
 
     // rotate IMU data
-    rpy[0] = ypr[2] * 180/M_PI;
-    rpy[1] = ypr[1] * 180/M_PI;
+    rpy[0] = ypr[1] * 180/M_PI;
+    rpy[1] = ypr[2] * 180/M_PI;
     rpy[2] = ypr[0] * 180/M_PI;
 
     // calculate Error
     for(int i=0; i<3; i++){
         e[i] = RPY_Setpoint[i] - rpy[i];
-        Serial.print(", ");
-        Serial.print(e[i]);
+        // Serial.print(", ");
+        // Serial.print(e[i]);
     }
 
     // calculate PID ctl cmd
@@ -247,14 +304,14 @@ void loop() {
 
     // convert PID ctl cmd to motor ctl cmd
     //! check max and min value of Motor_Speed by experiments
-    Motor_Speed[0] = (-g[0] - g[1] + g[2]);
-    Motor_Speed[1] = (-g[0] + g[1] - g[2]);
-    Motor_Speed[2] = (g[0] - g[1] - g[2]);
-    Motor_Speed[3] = (g[0] + g[1] + g[2]);
+    Motor_Speed[0] = ( g[0] - g[1] - g[2]) * kill_switch;
+    Motor_Speed[1] = (-g[0] - g[1] + g[2]) * kill_switch;
+    Motor_Speed[2] = ( g[0] + g[1] + g[2]) * kill_switch;
+    Motor_Speed[3] = (-g[0] + g[1] - g[2]) * kill_switch; 
     
     // constrain Motor cmd
     for(int i=0; i<4; i++){
-        Motor_Speed[i] = constrain(Motor_Speed[i], 0, 100);
+        Motor_Speed[i] = constrain(Motor_Speed[i], 0, 99);
     }
 
     // failsafe
@@ -284,7 +341,7 @@ void loop() {
         Motor_Speed[3] = 0;
         
         delay(100);
-            
+
         MotorFL.write(Motor_Speed[0]);
         MotorFR.write(Motor_Speed[1]);
         MotorBL.write(Motor_Speed[2]);
